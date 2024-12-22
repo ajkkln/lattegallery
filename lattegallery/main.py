@@ -1,6 +1,6 @@
 import uvicorn
-from lattegallery.setup import create_app
+from lattegallery.core.setup import create_app
 app = create_app()
 
 if __name__ == "__main__":
-    uvicorn.run(app)
+    uvicorn.run(app, port=8080)

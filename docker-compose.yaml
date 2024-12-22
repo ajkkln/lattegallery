@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      target: run
+      context: .
+    environment:
+      SERVER_PORT: "8000"
+      ROOT_PATH: /api
+      DB_URL: postgresql+psycopg://user:qwerty12@database:5432/lattegallery
+    secrets:
+      - source: token_secret
+        target: secret_key
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./initial_accounts.json:/run/secrets/initial_accounts
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.backend-lattegallery.loadbalancer.server.port=8000
+      - traefik.http.routers.backend.entryPoints=web
+      - traefik.http.service=backend.service=backend-lattegallery
+      - traefik.http.routers.backend.rule=PathPrefix('/api')
+      - traefik.http.routers.backend.middlewares=backend-stripprefix
+      - traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api
+  traefik:
+    image: traefik:v3.2
+    ports:
+    - "8000:8000"
+    - "80:80"
+    volumes:
+    - ./treafik.yaml:/etc/traefik/traefik.yaml
+    -
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: qwerty12
+      POSTGRES_DB: latte_gallery
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+
+volumes:
+  db_data:
