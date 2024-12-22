@@ -1,64 +1,36 @@
-from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
-from lattegallery.accounts.repository import AccountRepository
-from lattegallery.core.schemas import Page
-from lattegallery.pictures.models import Picture
-from lattegallery.pictures.repositories import PictureRepository
-from lattegallery.pictures.schemas import PictureCreateSchema, PictureUpdateSchema
+from fastapi import Depends, status
+from fastapi.exceptions import HTTPException
+from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
+
+from lattegallery.accounts.models import Account
+from lattegallery.core.dependencies import AccountServiceDep, SessionDep
+from lattegallery.security.permissions import BasePermission
+
+SecuritySchema = HTTPBasic(auto_error=False)
 
 
-class PictureService:
-    def __init__(
-        self, repository: PictureRepository, account_repository: AccountRepository
-    ):
-        self._repository = repository
-        self._account_repository = account_repository
+async def authenticate_user(
+    credentials: Annotated[HTTPBasicCredentials | None, Depends(SecuritySchema)],
+    account_service: AccountServiceDep,
+    session: SessionDep,
+):
+    if credentials is None:
+        return None
 
-    async def create(
-        self, owner_id: int, schema: PictureCreateSchema, session: AsyncSession
-    ) -> Picture:
-        owner = await self._account_repository.find_by_id(owner_id, session)
-        if owner is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND)
+    return await account_service.authorize(
+        credentials.username, credentials.password, session
+    )
 
-        picture = Picture(**schema.model_dump(), owner=owner)
 
-        session.add(picture)
-        await session.commit()
+AuthenticatedAccount = Annotated[Account | None, Depends(authenticate_user)]
 
-        return picture
 
-    async def find_by_id(self, id: int, session: AsyncSession) -> Picture:
-        picture = await self._repository.find_by_id(id, session)
-        if picture is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND)
-        return picture
+class AuthorizedAccount:
+    def __init__(self, permission: BasePermission):
+        self._permission = permission
 
-    async def find_all(
-        self,
-        owner_id: int | None,
-        title: str | None,
-        page: int,
-        size: int,
-        session: AsyncSession,
-    ) -> Page[Picture]:
-        count = await self._repository.count_all(owner_id, title, session)
-        pictures = await self._repository.find_all(
-            owner_id, title, page * size, size, session
-        )
-        return Page(count=count, items=pictures)
-
-    async def update_by_id(
-        self, id: int, schema: PictureUpdateSchema, session: AsyncSession
-    ) -> Picture:
-        picture = await self._repository.find_by_id(id, session)
-        if picture is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND)
-
-        for k, v in schema.model_dump().items():
-            setattr(picture, k, v)
-
-        await session.commit()
-
-        return picture
+    def __call__(self, account: AuthenticatedAccount):
+        if not self._permission.check_permission(account):
+            raise HTTPException(status.HTTP_403_FORBIDDEN)
