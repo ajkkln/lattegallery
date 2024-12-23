@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import FastAPI, Depends, APIRouter, HTTPException, status
 from fastapi.params import Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 
 from lattegallery.accounts.schemas import (
@@ -14,7 +15,13 @@ from lattegallery.core.dependencies import AccountServiceDep, SessionDep
 from lattegallery.core.schemas import Page, PageNumber, PageSize
 from lattegallery.security.dependencies import AuthenticatedAccount, AuthorizedAccount
 from lattegallery.security.permissions import Anonymous, Authenticated, IsAdmin
-
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from pydantic import BaseModel
+from lattegallery.accounts.dependencies import get_current_user
+from lattegallery.accounts.models import Account
+from lattegallery.accounts.services import AccountService , AccountRepository
 accounts_router = APIRouter(prefix="/accounts", tags=["Аккаунты"])
 
 
@@ -131,3 +138,22 @@ async def update_account_by_id(
         name="Вася Пупкин",
         role=Role.USER,
     )
+
+@accounts_router.post("/token", summary="Получение токена доступа")
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(), session: SessionDep = Depends()
+):
+    from lattegallery.accounts.security import create_access_token
+    account_service = AccountService(AccountRepository())
+    
+    account = await account_service.authorize(form_data.username, form_data.password, session)
+    if not account:
+        raise HTTPException(status_code=400, detail="Неверный логин или пароль")
+
+    access_token = create_access_token(data={"sub": account.login})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@accounts_router.get("/protected", summary="Пример защищенного маршрута")
+async def protected_route(current_user: Account = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user.name}!"}
