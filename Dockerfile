@@ -19,4 +19,4 @@ COPY lattegallery/ lattegallery/
 
 EXPOSE 8080
 
-ENTRYPOINT [ "sh", "-c", "python -m uvicorn --port $SERVER_PORT --host 0.0.0.0 --root-path $ROOT PATH lattegallery.main:app" ]
+ENTRYPOINT [ "sh", "-c", "python -m uvicorn --port $SERVER_PORT --host 0.0.0.0 --root-path $ROOT_PATH lattegallery.main:app" ]
