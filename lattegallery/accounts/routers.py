@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, APIRouter, HTTPException, status
-from fastapi.params import Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends, APIRouter, HTTPException, status
+from fastapi.params import Depends  # noqa: F811
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 
 from lattegallery.accounts.schemas import (

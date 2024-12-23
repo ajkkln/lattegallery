@@ -10,8 +10,8 @@ services:
     secrets:
       - source: token_secret
         target: secret_key
-    # ports:
-      # - "8000:8000"
+    ports:
+      - "8000:8000"
     volumes:
       - ./initial_accounts.json:/run/secrets/initial_accounts
     labels:

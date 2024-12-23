@@ -2,8 +2,8 @@ import logging
 
 from fastapi import status
 from fastapi.exceptions import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from lattegallery.accounts.security import get_password_hash , verify_password
+from sqlalchemy.ext.asyncio import AsyncSession
 from lattegallery.accounts.models import Account
 from lattegallery.accounts.repository import AccountRepository
 from lattegallery.accounts.schemas import AccountCreateSchema, AccountUpdateSchema
@@ -20,26 +20,27 @@ class AccountService:
     async def create(self, schema: AccountCreateSchema, session: AsyncSession):
         account = await self._repository.find_by_login(schema.login, session)
         if account is not None:
-            raise HTTPException(status.HTTP_409_CONFLICT)
+            raise HTTPException(status.HTTP_409_CONFLICT,detail="Аккаунт уже создан")
 
-        account = Account(**schema.model_dump())
+        account = Account(**schema.model_dump(exclude=["password"]),password=get_password_hash(schema.password),)
 
         session.add(account)
         await session.commit()
 
         return account
-    
-    # async def authorize(self, login: str, password: str, session: AsyncSession):
-    #     account = await self._repository.find_by_login(login, session)
-    #     if account is None or account.password != password:
-    #         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
-    #     return account
+
     async def authorize(self, login: str, password: str, session: AsyncSession):
         account = await self._repository.find_by_login(login, session)
         if account is None or not verify_password(password, account.password):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
         return account
-    
+
+    # async def authorize(self, login: str, password: str, session: AsyncSession):
+    #     account = await self._repository.find_by_login(login, session)
+    #     if account is None or account.password != password:
+    #         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+    #     return account
+
     async def find_by_id(self, id: int, session: AsyncSession):
         account = await self._repository.find_by_id(id, session)
         if account is None:
