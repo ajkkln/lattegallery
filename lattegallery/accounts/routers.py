@@ -1,5 +1,5 @@
 from fastapi import Depends, APIRouter, HTTPException, status
-from fastapi.params import Depends  # noqa: F811
+from fastapi.params import Depends  
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 
@@ -139,20 +139,25 @@ async def update_account_by_id(
         role=Role.USER,
     )
 
-@accounts_router.post("/token", summary="Получение токена доступа")
-async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), session: SessionDep = Depends()
-):
-    from lattegallery.accounts.security import create_access_token
-    account_service = AccountService(AccountRepository())
-    
-    account = await account_service.authorize(form_data.username, form_data.password, session)
-    if not account:
-        raise HTTPException(status_code=400, detail="Неверный логин или пароль")
+@accounts_router.post(
+        "",
+        summary = "create new account",
+        status_code = status.HTTP_201_CREATED,
+        dependencies=[Depends(AuthorizedAccount(IsAdmin()))],
+)
+async def create_account(  
+    body: AccountCreateSchema,
+    current_user: AuthenticatedAccount,
+    account_service: AccountServiceDep,
+    session: SessionDep
+) -> AccountSchema:
+    assert current_user is not None
+    if (current_user.role == Role.MAIN_ADMIN and body.role == Role.MAIN_ADMIN) or (current_user.role == Role.ADMIN and body.role in {Role.ADMIN, Role.MAIN_ADMIN}):
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
-    access_token = create_access_token(data={"sub": account.login})
-    return {"access_token": access_token, "token_type": "bearer"}
 
+    account = await account_service.create(body, session)
+    return AccountSchema.model_validate(account)
 
 @accounts_router.get("/protected", summary="Пример защищенного маршрута")
 async def protected_route(current_user: Account = Depends(get_current_user)):
