@@ -1,8 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException, status
-from typing import Annotated
-from fastapi import FastAPI
+
 from fastapi.params import Depends
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer  
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 
@@ -167,17 +166,5 @@ async def create_account(
 async def protected_route(current_user: Account = Depends(get_current_user)):
     return {"message": f"Hello, {current_user.name}!"}
 
-
-
-app = FastAPI()
-
-security = HTTPBearer()
-
-
-@app.get("/users/me")
-def read_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
-):
-    return {"scheme": credentials.scheme, "credentials": credentials.credentials}
 
 
