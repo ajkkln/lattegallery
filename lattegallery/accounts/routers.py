@@ -1,12 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException, status
-from fastapi.params import Depends  
+from typing import Annotated
+from fastapi import FastAPI
+from fastapi.params import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer  
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 
-from flask import Flask, request, jsonify
-import jwt
-import datetime
-from functools import wraps
 
 from lattegallery.accounts.schemas import (
     AccountCreateSchema,
@@ -169,55 +168,16 @@ async def protected_route(current_user: Account = Depends(get_current_user)):
     return {"message": f"Hello, {current_user.name}!"}
 
 
-app = Flask(__name__)
 
-SECRET_KEY = '12345' 
+app = FastAPI()
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        
-        
-        if 'Authorization' in request.headers:
-            auth_header = request.headers['Authorization']
-            token = auth_header.split(" ")[1] 
+security = HTTPBearer()
 
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 403
 
-        try:
-            
-            data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            current_user = data['username']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'message': 'Token has expired!'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'message': 'Invalid token!'}), 401
+@app.get("/users/me")
+def read_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+):
+    return {"scheme": credentials.scheme, "credentials": credentials.credentials}
 
-        return f(current_user, *args, **kwargs)
 
-    return decorated
-
-@app.route('/login', methods=['POST'])
-def login():
-    auth_data = request.json
-    username = auth_data.get('username')
-
-    if username:  
-        token = jwt.encode({
-            'username': username,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-        }, SECRET_KEY, algorithm='HS256')
-        
-        return jsonify({'token': token})
-
-    return jsonify({'message': 'Could not verify!'}), 401
-
-@app.route('/protected', methods=['GET'])
-@token_required
-def protected(current_user):
-    return jsonify({'message': f'Welcome {current_user}!'})
-
-if __name__ == '__main__':
-    app.run(debug=True)
