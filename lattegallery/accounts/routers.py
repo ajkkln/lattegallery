@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi import FastAPI
 from fastapi.params import Depends
-from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 import jwt
@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Annotated
 
 from lattegallery.accounts.schemas import (
     AccountCreateSchema,
@@ -292,3 +292,15 @@ def decode_jwt_token(token):
         return 'Token has expired'
     except jwt.InvalidTokenError:
         return 'Invalid token'
+
+
+
+
+security = HTTPBearer()
+
+
+@app.get("/users/me")
+def read_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+):
+    return {"scheme": credentials.scheme, "credentials": credentials.credentials}
