@@ -1,16 +1,16 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi import FastAPI
-from fastapi.params import Depends
+
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
 import jwt
 import datetime
-from fastapi import HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from jose import JWTError
+from datetime import timedelta
 from typing import Optional, Annotated
 
 from lattegallery.accounts.schemas import (
@@ -25,13 +25,9 @@ from lattegallery.core.dependencies import AccountServiceDep, SessionDep
 from lattegallery.core.schemas import Page, PageNumber, PageSize
 from lattegallery.security.dependencies import AuthenticatedAccount, AuthorizedAccount
 from lattegallery.security.permissions import Anonymous, Authenticated, IsAdmin
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-from pydantic import BaseModel
 from lattegallery.accounts.dependencies import get_current_user
 from lattegallery.accounts.models import Account
-from lattegallery.accounts.services import AccountService , AccountRepository
+
 accounts_router = APIRouter(prefix="/accounts", tags=["Аккаунты"])
 
 
@@ -149,25 +145,6 @@ async def update_account_by_id(
         role=Role.USER,
     )
 
-@accounts_router.post(
-        "",
-        summary = "create new account",
-        status_code = status.HTTP_201_CREATED,
-        dependencies=[Depends(AuthorizedAccount(IsAdmin()))],
-)
-async def create_account(  
-    body: AccountCreateSchema,
-    current_user: AuthenticatedAccount,
-    account_service: AccountServiceDep,
-    session: SessionDep
-) -> AccountSchema:
-    assert current_user is not None
-    if (current_user.role == Role.MAIN_ADMIN and body.role == Role.MAIN_ADMIN) or (current_user.role == Role.ADMIN and body.role in {Role.ADMIN, Role.MAIN_ADMIN}):
-        raise HTTPException(status.HTTP_403_FORBIDDEN)
-
-
-    account = await account_service.create(body, session)
-    return AccountSchema.model_validate(account)
 
 @accounts_router.get("/protected", summary="Пример защищенного маршрута")
 async def protected_route(current_user: Account = Depends(get_current_user)):
