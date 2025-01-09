@@ -1,10 +1,9 @@
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status
 from lattegallery.accounts.security import decode_access_token
 from sqlalchemy.ext.asyncio import AsyncSession
 from lattegallery.core.dependencies import session
-from jose import jwt, JWTError
-from datetime import datetime, timezone
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/accounts/token")
 

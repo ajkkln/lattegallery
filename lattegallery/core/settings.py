@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import os
+
 from lattegallery.accounts.schemas import AccountCreateSchema
 
 
