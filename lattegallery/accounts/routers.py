@@ -197,16 +197,6 @@ app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$KIX/6Z0x3T3zG1JZz5g4UuXc9h5sB8U5eB4Q0FQkK7X5A6v6S0x6C",  # password
-        "disabled": False,
-    }
-}
-
 
 def verify_password(plain_password, hashed_password):
     from passlib.context import CryptContext
@@ -231,7 +221,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = get_user(fake_users_db, form_data.username)
+    user = get_user(AuthenticatedAccount, form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -260,7 +250,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
-    user = get_user(fake_users_db, token_data.username)
+    user = get_user(AuthenticatedAccount, token_data.username)
     if user is None:
         raise credentials_exception
     return user

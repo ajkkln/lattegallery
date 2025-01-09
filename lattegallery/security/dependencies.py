@@ -2,13 +2,13 @@ from typing import Annotated
 
 from fastapi import Depends, status
 from fastapi.exceptions import HTTPException
-from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
+from fastapi.security.http import HTTPBearer, HTTPBasicCredentials
 
 from lattegallery.accounts.models import Account
 from lattegallery.core.dependencies import AccountServiceDep, SessionDep
 from lattegallery.security.permissions import BasePermission
 
-SecuritySchema = HTTPBasic(auto_error=False)
+SecuritySchema = HTTPBearer(auto_error=False)
 
 
 async def authenticate_user(
