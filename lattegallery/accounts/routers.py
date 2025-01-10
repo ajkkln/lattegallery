@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import PositiveInt
-import jwt
+
 import datetime
 
 from fastapi.security import OAuth2PasswordBearer
@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from jose import JWTError
 from datetime import timedelta
 from typing import Optional, Annotated
-
+from jose import jwt
 from lattegallery.accounts.schemas import (
     AccountCreateSchema,
     AccountPasswordUpdateSchema,
