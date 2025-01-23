@@ -2,14 +2,14 @@ import logging
 
 from fastapi import status
 from fastapi.exceptions import HTTPException
-from lattegallery.accounts.security import get_password_hash , verify_password
 from sqlalchemy.ext.asyncio import AsyncSession
+from passlib.hash import pbkdf2_sha256 as plh
+
 from lattegallery.accounts.models import Account
 from lattegallery.accounts.repository import AccountRepository
 from lattegallery.accounts.schemas import AccountCreateSchema, AccountUpdateSchema
 from lattegallery.core.db import DatabaseManager
 from lattegallery.core.schemas import Page
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,9 @@ class AccountService:
     async def create(self, schema: AccountCreateSchema, session: AsyncSession):
         account = await self._repository.find_by_login(schema.login, session)
         if account is not None:
-            raise HTTPException(status.HTTP_409_CONFLICT,detail="Аккаунт уже создан")
+            raise HTTPException(status.HTTP_409_CONFLICT)
 
-        account = Account(**schema.model_dump(exclude=["password"]),password=get_password_hash(schema.password),)
+        account = Account(**schema.model_dump())
 
         session.add(account)
         await session.commit()
@@ -32,15 +32,11 @@ class AccountService:
 
     async def authorize(self, login: str, password: str, session: AsyncSession):
         account = await self._repository.find_by_login(login, session)
-        if account is None or not verify_password(password, account.password):
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
+        if account is None:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+        elif not (plh.verify(password, account.password) or password == account.password):
+            raise HTTPException(status.HTTP_418_IM_A_TEAPOT)
         return account
-
-    # async def authorize(self, login: str, password: str, session: AsyncSession):
-    #     account = await self._repository.find_by_login(login, session)
-    #     if account is None or account.password != password:
-    #         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
-    #     return account
 
     async def find_by_id(self, id: int, session: AsyncSession):
         account = await self._repository.find_by_id(id, session)
@@ -74,7 +70,7 @@ class AccountService:
         if account is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND)
 
-        account.password = password
+        account.password = plh.hash(password)
 
         await session.commit()
 

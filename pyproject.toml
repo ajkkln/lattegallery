@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "lattegallery"
+name = "latte-gallery"
 version = "0.1.0"
 description = ""
-authors = ["ajkkln <alina.meow.228@mail.ru>"]
+authors = ["arsuhinars <arsuhinars@gmail.com>"]
 readme = "README.md"
 
 [tool.mypy]
@@ -16,12 +16,9 @@ uvicorn = "^0.32.0"
 sqlalchemy = "^2.0.36"
 psycopg = {extras = ["binary"], version = "^3.2.3"}
 pydantic-settings = "^2.6.1"
-python-jose = "^3.3.0"
-pycryptodome = "^3.21.0"
 passlib = "^1.7.4"
-python-multipart = "^0.0.20"
-bcrypt = "^4.2.1"
 pyjwt = "^2.10.1"
+
 
 [build-system]
 requires = ["poetry-core"]
