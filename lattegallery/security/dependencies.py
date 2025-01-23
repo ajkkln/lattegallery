@@ -1,15 +1,20 @@
+import os
+from jose import jwt
+from datetime import datetime, timezone, timedelta
 from typing import Annotated
+from dotenv import load_dotenv
 
 from fastapi import Depends, status
 from fastapi.exceptions import HTTPException
-from fastapi.security.http import HTTPBearer, HTTPBasicCredentials
+from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 
 from lattegallery.accounts.models import Account
 from lattegallery.core.dependencies import AccountServiceDep, SessionDep
 from lattegallery.security.permissions import BasePermission
 
-SecuritySchema = HTTPBearer(auto_error=False)
-
+SecuritySchema = HTTPBasic(auto_error=False)
+load_dotenv()
+TOKEN_SECRET = os.getenv('TOKEN_SECRET')
 
 async def authenticate_user(
     credentials: Annotated[HTTPBasicCredentials | None, Depends(SecuritySchema)],
@@ -22,7 +27,28 @@ async def authenticate_user(
     return await account_service.authorize(
         credentials.username, credentials.password, session
     )
+async def authenticate_by_token(
+    token: str,
+    account_service: AccountServiceDep,
+    session: SessionDep,
+):
+    if token is None:
+        return None
+    user_data = jwt.decode(token, str(TOKEN_SECRET), algorithms=["HS256"])
 
+    return await account_service.authorize(
+        user_data['sub'], user_data['pas'], session
+    )
+
+async def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, str(TOKEN_SECRET), algorithm="HS256")
+    return encoded_jwt
 
 AuthenticatedAccount = Annotated[Account | None, Depends(authenticate_user)]
 

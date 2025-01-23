@@ -19,3 +19,8 @@ class Page(BaseModel, Generic[ItemT]):
 
     count: int
     items: list[ItemT]
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

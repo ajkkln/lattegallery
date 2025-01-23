@@ -10,6 +10,7 @@ from lattegallery.accounts.schemas import AccountCreateSchema, AccountUpdateSche
 from lattegallery.core.db import DatabaseManager
 from lattegallery.core.schemas import Page
 
+
 logger = logging.getLogger(__name__)
 
 
