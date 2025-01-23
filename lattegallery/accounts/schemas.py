@@ -1,11 +1,6 @@
 from typing import Annotated
 from pydantic import BaseModel, ConfigDict, StringConstraints
-
 from lattegallery.accounts.models import Role
-
-
-
-
 
 class AccountSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
