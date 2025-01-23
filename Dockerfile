@@ -10,7 +10,7 @@ RUN chmod +x install-poetry.py && \
     poetry config virtualenvs.create false
 
 COPY pyproject.toml poetry.lock ./
-RUN poetry install -n --no-cache --no-root
+RUN poetry install -n --no-cache 
 
 
 FROM install AS run
